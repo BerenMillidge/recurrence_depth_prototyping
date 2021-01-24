@@ -37,13 +37,13 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
     modelname = model+'_'+str(lr)+'LR_'+str(cls)+'CLS_'+str(rep)+'REP'
     
     # clearn folder
-    checkpointpath = root+'checkpoint/'
-    logpath = root+'log/'
+    #checkpointpath = root+'checkpoint/'
+    #logpath = root+'log/'
 
-    if not os.path.isdir(checkpointpath):
-        os.mkdir(checkpointpath)
-    if not os.path.isdir(logpath):
-        os.mkdir(logpath)
+    if not os.path.isdir(logdir):
+        os.mkdir(logdir)
+    if not os.path.isdir(savedir):
+        os.mkdir(savedir)
     while(os.path.isfile(checkpointpath + modelname + '_last_ckpt.t7')): 
         rep += 1
         modelname = model+'_'+str(lr)+'LR_'+str(cls)+'CLS_'+str(rep)+'REP'
@@ -184,7 +184,7 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
        # statstr = 'Testing: Epoch=%d | Loss: %.3f |  Acc: %.3f%% (%d/%d) | best_acc: %.3f' \
                  # % (epoch, test_loss/(batch_idx+1), 100.*(float)(correct)/(float)(total), correct, total, best_acc)
         #statfile.write(statstr+'\n')
-        print(statstr)
+        #print(statstr)
         
         # Save checkpoint.
         acc = 100.*correct/total
