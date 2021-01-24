@@ -227,7 +227,7 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
         train_loss, train_acc = train(epoch)
         test_loss, test_acc = test(epoch)
         train_losses.append(train_loss)
-        trains_accs.append(train_acc)
+        train_accs.append(train_acc)
         test_losses.append(test_loss)
         test_accs.append(test_acc)
         save_logs(logdir, savedir, train_losses, train_accs, test_losses, test_accs)
