@@ -31,7 +31,7 @@ set -e
 echo "Setting up log files"
 USER=s1686853
 SCRATCH_DISK=/disk/scratch
-log_path=${SCRATCH_DISK}/${USER}/depth_recurrence
+log_path=${SCRATCH_DISK}/${USER}/DepthRecurrence
 mkdir -p ${log_path}
 
 echo "Initializing Conda Environment"
@@ -43,7 +43,7 @@ conda activate ${CONDA_NAME}
 echo "Moving input data to the compute node's scratch space: $SCRATCH_DISK"
 
 # input data directory path on the DFS
-repo_home=/home/${USER}/DepthRecurrence
+repo_home=/home/${USER}/recurrence_depth_prototyping
 cifar10_path=${repo_home}/cifar10_data
 cifar100_path=${repo_home}/cifar100_data
 #src_path=${repo_home}/experiments/examples/mnist/data/input
