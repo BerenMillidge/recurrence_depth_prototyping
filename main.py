@@ -44,9 +44,9 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
         os.mkdir(logdir)
     if not os.path.isdir(savedir):
         os.mkdir(savedir)
-    while(os.path.isfile(checkpointpath + modelname + '_last_ckpt.t7')): 
-        rep += 1
-        modelname = model+'_'+str(lr)+'LR_'+str(cls)+'CLS_'+str(rep)+'REP'
+    #while(os.path.isfile(checkpointpath + modelname + '_last_ckpt.t7')): 
+    #    rep += 1
+    #  modelname = model+'_'+str(lr)+'LR_'+str(cls)+'CLS_'+str(rep)+'REP'
         
     # Data
     print('==> Preparing data..')
@@ -221,7 +221,7 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
       
     #train network
     for epoch in range(start_epoch, start_epoch+num_epochs):
-        statfile = open(logpath+'training_stats_'+modelname+'.txt', 'a+')  #open file for writing
+        #statfile = open(logpath+'training_stats_'+modelname+'.txt', 'a+')  #open file for writing
         if epoch==80 or epoch==140 or epoch==200:
             decrease_learning_rate()       
         train_loss, train_acc = train(epoch)
