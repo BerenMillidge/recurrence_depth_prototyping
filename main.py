@@ -23,7 +23,7 @@ def save_logs(logdir, savedir, losses, accs, test_losses, test_accs):
     current_time = str(now.strftime("%H:%M:%S"))
     subprocess.call(['echo','saved at time: ' + str(current_time)])
 
-def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, gpunum=4, lr=0.01,num_blocks=3,use_cuda = False,use_rate_params=True):
+def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, gpunum=4, lr=0.01,num_blocks=3,use_cuda = False,use_rate_params=True,num_epochs = 50):
     #use_cuda = torch.cuda.is_available() # choose to use gpu if possible
     best_acc = 0  # best test accuracy
     start_epoch = 0  # start from epoch 0 or last checkpoint epoch
@@ -217,7 +217,7 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
     test_accs = []
       
     #train network
-    for epoch in range(start_epoch, start_epoch+250):
+    for epoch in range(start_epoch, start_epoch+num_epochs):
         statfile = open(logpath+'training_stats_'+modelname+'.txt', 'a+')  #open file for writing
         if epoch==80 or epoch==140 or epoch==200:
             decrease_learning_rate()       
@@ -245,6 +245,7 @@ if __name__ == '__main__':
     parser.add_argument("--num_blocks",default=3,type=int, help="depth in blocks of the network")
     parser.add_argument("--dataset", default="cifar10", type=str, help="dataset to use")
     parser.add_argument("--use_rate_params", default="False", type=boolcheck, help="Learn a_0, b_0 params via gradient descent?")
+    parser.add_argument("--num_epochs", default=50, type=int, help="number of epochs to run for")
     args = parser.parse_args()
     use_cuda = torch.cuda.is_available()
     gpunum = 0
@@ -264,4 +265,4 @@ if __name__ == '__main__':
     torch.cuda.empty_cache()
 
 
-    train_prednet(logdir = args.logdir, savedir = args.savedir,model=args.model, cls=args.cls, gpunum=gpunum, num_blocks= args.num_blocks,lr=args.lr,dataset=args.dataset,use_cuda = use_cuda)
+    train_prednet(logdir = args.logdir, savedir = args.savedir,model=args.model, cls=args.cls, gpunum=gpunum, num_blocks= args.num_blocks,lr=args.lr,dataset=args.dataset,use_cuda = use_cuda, num_epochs = args.num_epochs)
