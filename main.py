@@ -86,8 +86,9 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
                     [p for p in net.linear.parameters()]
     else:
         convparas = [p for p in net.FFconv.parameters()]+\
-                    [p for p in net.FBconv.parameters()]+\
                     [p for p in net.linear.parameters()]
+        if cls > 0:
+            convparas += [p for p in net.FBconv.parameters()]
 
       
     if use_rate_params:
