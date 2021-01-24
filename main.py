@@ -7,6 +7,8 @@ import torch.optim as optim
 import torch.backends.cudnn as cudnn
 import torchvision
 import torchvision.transforms as transforms
+from utils import *
+from models import *
 import argparse
 from torch.autograd import Variable
 import subprocess
