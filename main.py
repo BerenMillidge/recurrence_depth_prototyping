@@ -9,8 +9,6 @@ import torchvision
 import torchvision.transforms as transforms
 import argparse
 from torch.autograd import Variable
-from utils import *
-from model import *
 import subprocess
 import sys
 
@@ -25,7 +23,7 @@ def save_logs(logdir, savedir, losses, accs, test_losses, test_accs):
     current_time = str(now.strftime("%H:%M:%S"))
     subprocess.call(['echo','saved at time: ' + str(current_time)])
 
-def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, gpunum=4, lr=0.01,num_blocks=3,use_cuda = False):
+def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, gpunum=4, lr=0.01,num_blocks=3,use_cuda = False,use_rate_params=True):
     #use_cuda = torch.cuda.is_available() # choose to use gpu if possible
     best_acc = 0  # best test accuracy
     start_epoch = 0  # start from epoch 0 or last checkpoint epoch
@@ -76,7 +74,7 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
 
     # Model
     print('==> Building model..')
-    net = models[model](num_classes=100,cls=cls)
+    net = models[model](num_classes=100,cls=cls,num_blocks = num_blocks,use_rate_params = use_rate_params)
     if use_cuda:
       net = net.cuda()
        
@@ -89,12 +87,18 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
                     [p for p in net.FBconv.parameters()]+\
                     [p for p in net.linear.parameters()]
 
-    rateparas = [p for p in net.a0.parameters()]+\
-                [p for p in net.b0.parameters()]
-    optimizer = optim.SGD([
-                {'params': convparas},
-                {'params': rateparas, 'weight_decay': 0},
-                ], lr=lr, momentum=0.9, weight_decay=5e-4)
+      
+    if use_rate_params:
+      rateparas = [p for p in net.a0.parameters()]+\
+                  [p for p in net.b0.parameters()]
+      optimizer = optim.SGD([
+                  {'params': convparas},
+                  {'params': rateparas, 'weight_decay': 0},
+                  ], lr=lr, momentum=0.9, weight_decay=5e-4)
+    else:
+      optimizer = optim.SGD([
+                  {'params': convparas},
+                  ], lr=lr, momentum=0.9, weight_decay=5e-4)
       
 
     # Parallel computing using mutiple gpu
@@ -226,6 +230,10 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
         save_logs(logdir, savedir, train_losses, train_accs, test_losses, test_accs)
 
 
+def boolcheck(x):
+    return str(x).lower() in ["true", "1", "yes"]
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PyTorch CIFAR100 Training')
     parser.add_argument("--logdir", type=str, default="logs")
@@ -236,6 +244,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
     parser.add_argument("--num_blocks",default=3,type=int, help="depth in blocks of the network")
     parser.add_argument("--dataset", default="cifar10", type=str, help="dataset to use")
+    parser.add_argument("--use_rate_params", default="False", type=boolcheck, help="Learn a_0, b_0 params via gradient descent?")
     args = parser.parse_args()
     use_cuda = torch.cuda.is_available()
     gpunum = 0
@@ -252,5 +261,7 @@ if __name__ == '__main__':
 
     print("USING CUDA? ", use_cuda)
     print("GPU NUM: ", gpunum)
+    torch.cuda.empty_cache()
+
 
     train_prednet(logdir = args.logdir, savedir = args.savedir,model=args.model, cls=args.cls, gpunum=gpunum, num_blocks= args.num_blocks,lr=args.lr,dataset=args.dataset,use_cuda = use_cuda)

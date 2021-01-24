@@ -1,4 +1,4 @@
-'''PredNet in PyTorch.'''
+# Prednet model
 
 import torch
 import torch.nn as nn
@@ -37,7 +37,7 @@ class FBconv2d(nn.Module):
         x = self.convtranspose2d(x)
         return x
 
-   
+
 # FFconv2d and FBconv2d that share weights
 class Conv2d(nn.Module):
     def __init__(self, inchan, outchan, sample=False):
@@ -60,6 +60,7 @@ class Conv2d(nn.Module):
                 x = self.Upsample(x)
             x = F.conv_transpose2d(x, self.weights, stride=1, padding=1)
         return x
+
 
 def compute_model_size(block_num,sizes):
         ics = []
@@ -85,21 +86,18 @@ def compute_model_size(block_num,sizes):
                 sps.append(False)
         return ics, ocs, sps
 
+
 # PredNet
 class PredNet(nn.Module):
 
-    def __init__(self, block_num=3, num_classes=10, cls=3,use_rate_params =True):
+    def __init__(self, num_classes=10, cls=100, num_blocks=1, use_rate_params=True):
         super().__init__()
-        self.block_num = block_num
-        self.num_classes = num_classes
-        self.sizes = [3,64,128,256]
+        sizes = [3,32,64,128]
         self.use_rate_params = use_rate_params
-        ics,ocs,sps = compute_model_size(self.block_num, self.sizes)
-        print("SIZES: ")
-        print(ics)
-        print(ocs)
-        print(sps)
-        self.cls = cls # num of circlescls
+        ics,ocs,sps = compute_model_size(num_blocks,sizes)
+        print(ics, ocs, sps)
+        self.cls = cls # num of circles
+        print("CLS: ", cls)
         assert len(ics) == len(ocs), 'Input and output channels must be same length'
         self.nlays = len(ics) #number of layers
 
@@ -116,6 +114,7 @@ class PredNet(nn.Module):
         else:
           self.a0 = [torch.zeros(1,ics[i],1,1)+0.5 for i in range(1,self.nlays)]
           self.b0 = [torch.zeros(1,ocs[i],1,1)+1.0 for i in range(self.nlays)]
+
         # Linear layer
         self.linear = nn.Linear(ocs[-1], num_classes)
 
@@ -130,8 +129,9 @@ class PredNet(nn.Module):
 
         # Dynamic process 
         for t in range(self.cls):
-            #print("Feedback, ", t)
-            # Feedback prediction
+            print("cls ", self.cls)
+            print("Feedback, ", t)
+          # Feedback prediction
             xp = []
             for i in range(self.nlays-1,0,-1):
                 #print('xp len ', len(xp))
@@ -150,7 +150,7 @@ class PredNet(nn.Module):
         out = F.avg_pool2d(xr[-1], xr[-1].size(-1))
         out = out.view(out.size(0), -1)
         out = self.linear(out)
- 
+
         return out
 
     def save_model(self,logdir):
@@ -161,15 +161,16 @@ class PredNet(nn.Module):
 
 # PredNet
 class PredNetTied(nn.Module):
-    def __init__(self, block_num=3, num_classes=10, cls=3,use_rate_params=True):
+    def __init__(self, num_classes=10, cls=3,num_blocks=3, use_rate_params=True):
         super().__init__()
-        self.block_num = block_num
-        self.num_classes = num_classes
-        self.sizes = [3,64,128,256]
+        sizes = [3,32,64,128]
         self.use_rate_params = use_rate_params
-        ics,ocs,sps = compute_model_size(self.block_num, self.sizes)
-        self.cls = cls # num of circlescls
-        self.nlays = len(ics)
+        ics,ocs,sps = compute_model_size(num_blocks,sizes)
+        print(ics, ocs, sps)
+        self.cls = cls # num of circles
+        print("CLS: ", cls)
+        assert len(ics) == len(ocs), 'Input and output channels must be same length'
+        self.nlays = len(ics) #number of layers
 
         # Convolutional layers
         self.conv = nn.ModuleList([Conv2d(ics[i],ocs[i],sample=sps[i]) for i in range(self.nlays)])
@@ -214,4 +215,3 @@ class PredNetTied(nn.Module):
         out = out.view(out.size(0), -1)
         out = self.linear(out)
         return out
-          
