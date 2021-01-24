@@ -25,8 +25,8 @@ def save_logs(logdir, savedir, losses, accs, test_losses, test_accs):
     current_time = str(now.strftime("%H:%M:%S"))
     subprocess.call(['echo','saved at time: ' + str(current_time)])
 
-def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, gpunum=4, lr=0.01,num_blocks=3):
-    use_cuda = torch.cuda.is_available() # choose to use gpu if possible
+def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, gpunum=4, lr=0.01,num_blocks=3,use_cuda = False):
+    #use_cuda = torch.cuda.is_available() # choose to use gpu if possible
     best_acc = 0  # best test accuracy
     start_epoch = 0  # start from epoch 0 or last checkpoint epoch
     batchsize = 128 #batch size
@@ -232,10 +232,25 @@ if __name__ == '__main__':
     parser.add_argument("--savedir",type=str,default="savedir")
     parser.add_argument('--cls', default=6, type=int, help='number of cycles')
     parser.add_argument('--model', default='PredNet', help= 'models to train')
-    parser.add_argument('--gpunum', default=2, type=int, help='number of gpu used to train the model')
+    #parser.add_argument('--gpunum', default=2, type=int, help='number of gpu used to train the model')
     parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
     parser.add_argument("--num_blocks",default=3,type=int, help="depth in blocks of the network")
     parser.add_argument("--dataset", default="cifar10", type=str, help="dataset to use")
     args = parser.parse_args()
+    use_cuda = torch.cuda.is_available()
+    gpunum = 0
+    if use_cuda:
+        # check GPU has enough memory to actually run the thing
+        MEM_LIMIT = 10
+        total_mem = torch.cuda.get_device_properties(torch.cuda.current_device()).total_memory / 1e9
+        print("TOTAL MEM: ", total_mem)
+        if total_mem < MEM_LIMIT:
+            gpunum = 0
+            use_cuda = False
+        else:
+            gpunum = torch.cuda.device_count()
 
-    train_prednet(logdir = args.logdir, savedir = args.savedir,model=args.model, cls=args.cls, gpunum=args.gpunum, num_blocks= args.num_blocks,lr=args.lr,dataset=args.dataset)
+    print("USING CUDA? ", use_cuda)
+    print("GPU NUM: ", gpunum)
+
+    train_prednet(logdir = args.logdir, savedir = args.savedir,model=args.model, cls=args.cls, gpunum=gpunum, num_blocks= args.num_blocks,lr=args.lr,dataset=args.dataset,use_cuda = use_cuda)
