@@ -120,7 +120,7 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
         total = 0
         
         training_setting = 'batchsize=%d | epoch=%d | lr=%.1e ' % (batchsize, epoch, optimizer.param_groups[0]['lr'])
-        statfile.write('\nTraining Setting: '+training_setting+'\n')
+        #statfile.write('\nTraining Setting: '+training_setting+'\n')
         
         for batch_idx, (inputs, targets) in enumerate(trainloader):
             if use_cuda:
