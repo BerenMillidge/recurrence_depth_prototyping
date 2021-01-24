@@ -14,7 +14,8 @@ from torch.autograd import Variable
 import subprocess
 import sys
 import numpy as np
-import datetime
+from datetime import datetime
+import matplotlib.pyplot as plt
 
 def save_logs(logdir, savedir, losses, accs, test_losses, test_accs):
     np.save(logdir +"/losses.npy",np.array(losses))
