@@ -65,6 +65,7 @@ def compute_model_size(block_num,sizes):
         ics = []
         ocs = []
         sps = []
+        L = len(sizes)
         for i,size in enumerate(sizes):
           if i == 0:
             ics.append(sizes[i])
@@ -72,8 +73,12 @@ def compute_model_size(block_num,sizes):
             sps.append(False)
           else:
             for n in range(block_num):
-              ics.append(sizes[i])
-              ocs.append(sizes[i])
+              if n == block_num-1 and i != L -1:
+                ics.append(sizes[i])
+                ocs.append(sizes[i+1])  
+              else:           
+                ics.append(sizes[i])
+                ocs.append(sizes[i])
               if n == 0 and i >1:
                 sps.append(True)
               else:
@@ -89,7 +94,11 @@ class PredNet(nn.Module):
         self.num_classes = num_classes
         self.sizes = [3,64,128,256]
         self.use_rate_params = use_rate_params
-        ics,ocs,sps = compute_model_size(block_num, sizes)
+        ics,ocs,sps = compute_model_size(self.block_num, self.sizes)
+        print("SIZES: ")
+        print(ics)
+        print(ocs)
+        print(sps)
         self.cls = cls # num of circlescls
         assert len(ics) == len(ocs), 'Input and output channels must be same length'
         self.nlays = len(ics) #number of layers
@@ -153,7 +162,7 @@ class PredNetTied(nn.Module):
         self.num_classes = num_classes
         self.sizes = [3,64,128,256]
         self.use_rate_params = use_rate_params
-        ics,ocs,sps = compute_model_size(block_num, sizes)
+        ics,ocs,sps = compute_model_size(self.block_num, self.sizes)
         self.cls = cls # num of circlescls
         self.nlays = len(ics)
 
