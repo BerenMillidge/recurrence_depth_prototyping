@@ -1,4 +1,5 @@
-# Prednet model
+'''PredNet in PyTorch.'''
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -60,15 +61,36 @@ class Conv2d(nn.Module):
             x = F.conv_transpose2d(x, self.weights, stride=1, padding=1)
         return x
 
+def compute_model_size(block_num,sizes):
+        ics = []
+        ocs = []
+        sps = []
+        for i,size in enumerate(sizes):
+          if i == 0:
+            ics.append(sizes[i])
+            ocs.append(sizes[i+1])
+            sps.append(False)
+          else:
+            for n in range(block_num):
+              ics.append(sizes[i])
+              ocs.append(sizes[i])
+              if n == 0 and i >1:
+                sps.append(True)
+              else:
+                sps.append(False)
+        return ics, ocs, sps
+
 # PredNet
 class PredNet(nn.Module):
 
-    def __init__(self, ics = [3,  64, 64,  128, 128, 256, 256, 256], ocs = [64, 64, 128, 128, 256, 256, 256, 256], num_classes=10, cls=3):
+    def __init__(self, block_num=3, num_classes=10, cls=3,use_rate_params =True):
         super().__init__()
-        #ics = [3,  64, 64,  128, 128, 256, 256, 256] # input chanels
-        #ocs = [64, 64, 128, 128, 256, 256, 256, 256] # output chanels
-        sps = [False, False, True, False, True, False, False, False] # downsample flag
-        self.cls = cls # num of circles
+        self.block_num = block_num
+        self.num_classes = num_classes
+        self.sizes = [3,64,128,256]
+        self.use_rate_params = use_rate_params
+        ics,ocs,sps = compute_model_size(block_num, sizes)
+        self.cls = cls # num of circlescls
         assert len(ics) == len(ocs), 'Input and output channels must be same length'
         self.nlays = len(ics) #number of layers
 
@@ -79,9 +101,12 @@ class PredNet(nn.Module):
             self.FBconv = nn.ModuleList([FBconv2d(ocs[i],ics[i],upsample=sps[i]) for i in range(self.nlays)])
 
         # Update rate
-        self.a0 = nn.ParameterList([nn.Parameter(torch.zeros(1,ics[i],1,1)+0.5) for i in range(1,self.nlays)])
-        self.b0 = nn.ParameterList([nn.Parameter(torch.zeros(1,ocs[i],1,1)+1.0) for i in range(self.nlays)])
-
+        if self.use_rate_params:
+          self.a0 = nn.ParameterList([nn.Parameter(torch.zeros(1,ics[i],1,1)+0.5) for i in range(1,self.nlays)])
+          self.b0 = nn.ParameterList([nn.Parameter(torch.zeros(1,ocs[i],1,1)+1.0) for i in range(self.nlays)])
+        else:
+          self.a0 = [torch.zeros(1,ics[i],1,1)+0.5 for i in range(1,self.nlays)]
+          self.b0 = [torch.zeros(1,ocs[i],1,1)+1.0 for i in range(self.nlays)]
         # Linear layer
         self.linear = nn.Linear(ocs[-1], num_classes)
 
@@ -122,20 +147,26 @@ class PredNet(nn.Module):
 
 # PredNet
 class PredNetTied(nn.Module):
-    def __init__(self, num_classes=10, cls=3):
+    def __init__(self, block_num=3, num_classes=10, cls=3,use_rate_params=True):
         super().__init__()
-        ics = [3,  64, 64,  128, 128, 256, 256, 256] # input chanels
-        ocs = [64, 64, 128, 128, 256, 256, 256, 256] # output chanels
-        sps = [False, False, True, False, True, False, False, False] # downsample flag
-        self.cls = cls # num of circles
-        self.nlays = len(ics) # num of circles
+        self.block_num = block_num
+        self.num_classes = num_classes
+        self.sizes = [3,64,128,256]
+        self.use_rate_params = use_rate_params
+        ics,ocs,sps = compute_model_size(block_num, sizes)
+        self.cls = cls # num of circlescls
+        self.nlays = len(ics)
 
         # Convolutional layers
         self.conv = nn.ModuleList([Conv2d(ics[i],ocs[i],sample=sps[i]) for i in range(self.nlays)])
 
         # Update rate
-        self.a0 = nn.ParameterList([nn.Parameter(torch.zeros(1,ics[i],1,1)+0.5) for i in range(1,self.nlays)])
-        self.b0 = nn.ParameterList([nn.Parameter(torch.zeros(1,ocs[i],1,1)+1.0) for i in range(self.nlays)])
+        if self.use_rate_params:
+          self.a0 = nn.ParameterList([nn.Parameter(torch.zeros(1,ics[i],1,1)+0.5) for i in range(1,self.nlays)])
+          self.b0 = nn.ParameterList([nn.Parameter(torch.zeros(1,ocs[i],1,1)+1.0) for i in range(self.nlays)])
+        else:
+          self.a0 = [torch.zeros(1,ics[i],1,1)+0.5 for i in range(1,self.nlays)]
+          self.b0 = [torch.zeros(1,ocs[i],1,1)+1.0 for i in range(self.nlays)]
 
         # Linear layer
         self.linear = nn.Linear(ocs[-1], num_classes)
