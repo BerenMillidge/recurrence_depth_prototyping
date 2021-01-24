@@ -249,6 +249,11 @@ if __name__ == '__main__':
     parser.add_argument("--use_rate_params", default="False", type=boolcheck, help="Learn a_0, b_0 params via gradient descent?")
     parser.add_argument("--num_epochs", default=50, type=int, help="number of epochs to run for")
     args = parser.parse_args()
+
+    if args.savedir != "":
+            subprocess.call(["mkdir","-p",str(args.savedir)])
+    if args.logdir != "":
+        subprocess.call(["mkdir","-p",str(args.logdir)])
     use_cuda = torch.cuda.is_available()
     gpunum = 0
     if use_cuda:
