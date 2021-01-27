@@ -17,11 +17,40 @@ import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-def save_logs(logdir, savedir, losses, accs, test_losses, test_accs):
-    np.save(logdir +"/losses.npy",np.array(losses))
-    np.save(logdir+"/accs.npy",np.array(accs))
-    np.save(logdir+"/test_accs.npy",np.array(test_accs))
-    np.save(logdir +"/test_losses.npy", np.array(test_losses))
+def save_logs(logdir, savedir, losses, accs, test_losses, test_accs, net, epoch):
+    # this is a totally stupid thing to have to do to be honest, just because the edinburgh computers only run for 8 hours (! WHAT!?)
+    train_loss_name = logdir+"/losses.npy"
+    train_accs_name = logdir + "/accs.npy"
+    test_loss_name = logdir+"/test_losses.npy"
+    test_accs_name = logdir+"/test_accs.npy"
+    if os.path.isfile(savedir + "/losses.npy"):
+        l = np.load(savedir + "/losses.npy")
+        l = np.concatenate((l, np.array(losses)))
+    else:
+        l = np.array(losses)
+    np.save(train_loss_name, l)
+
+    if os.path.isfile(savedir + "/accs.npy"):
+        l = np.load(savedir + "/accs.npy")
+        l = np.concatenate((l, np.array(accs)))
+    else:
+        l = np.array(accs)
+    np.save(train_accs_name, l)
+
+    if os.path.isfile(savedir + "/test_losses.npy"):
+        l = np.load(savedir + "/test_losses.npy")
+        l = np.concatenate((l, np.array(test_losses)))
+    else:
+        l = np.array(test_losses)
+    np.save(test_loss_name, l)
+
+    if os.path.isfile(savedir + "/test_accs.npy"):
+        l = np.load(savedir + "/test_accs.npy")
+        l = np.concatenate((l, np.array(test_accs)))
+    else:
+        l = np.array(test_accs)
+    np.save(test_accs_name, l)
+    net.save_model(logdir +"/model_checkpoint", epoch)
     subprocess.call(['rsync','--archive','--update','--compress','--progress',str(logdir) +"/",str(savedir)])
     print("Rsynced files from: " + str(logdir) + "/ " + " to" + str(savedir))
     now = datetime.now()
@@ -38,19 +67,11 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
     
     models = {'PredNet': PredNet, 'PredNetTied':PredNetTied}
     modelname = model+'_'+str(lr)+'LR_'+str(cls)+'CLS_'+str(rep)+'REP'
-    
-    # clearn folder
-    #checkpointpath = root+'checkpoint/'
-    #logpath = root+'log/'
 
     if not os.path.isdir(logdir):
         os.mkdir(logdir)
     if not os.path.isdir(savedir):
         os.mkdir(savedir)
-    #while(os.path.isfile(checkpointpath + modelname + '_last_ckpt.t7')): 
-    #    rep += 1
-    #  modelname = model+'_'+str(lr)+'LR_'+str(cls)+'CLS_'+str(rep)+'REP'
-        
     # Data
     print('==> Preparing data..')
     transform_train = transforms.Compose([
@@ -62,14 +83,14 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),])
     if dataset == "cifar100":
-      trainset = torchvision.datasets.CIFAR100(root='./cifar100_data', train=True, download=False, transform=transform_train)
+      trainset = torchvision.datasets.CIFAR100(root='./cifar100_data', train=True, download=True, transform=transform_train)
       trainloader = torch.utils.data.DataLoader(trainset, batch_size=batchsize, shuffle=True, num_workers=2)
-      testset = torchvision.datasets.CIFAR100(root='./cifar100_data', train=False, download=False, transform=transform_test)
+      testset = torchvision.datasets.CIFAR100(root='./cifar100_data', train=False, download=True, transform=transform_test)
       testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
     elif dataset == "cifar10":
-      trainset = torchvision.datasets.CIFAR10(root='./cifar10_data', train=True, download=False, transform=transform_train)
+      trainset = torchvision.datasets.CIFAR10(root='./cifar10_data', train=True, download=True, transform=transform_train)
       trainloader = torch.utils.data.DataLoader(trainset, batch_size=batchsize, shuffle=True, num_workers=2)
-      testset = torchvision.datasets.CIFAR10(root='./cifar10_data', train=False, download=False, transform=transform_test)
+      testset = torchvision.datasets.CIFAR10(root='./cifar10_data', train=False, download=True, transform=transform_test)
       testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
     else:
       raise ValueError("dataset name: " + str(dataset) + " is not supported. Try cifar10 or cifar100")
@@ -80,6 +101,21 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
     # Model
     print('==> Building model..')
     net = models[model](num_classes=100,cls=cls,num_blocks = num_blocks,use_rate_params = use_rate_params)
+    # see if there is a checkpoint
+    checkpoint_name = logdir + "/model_checkpoint"
+    if os.path.isfile(checkpoint_name):
+        print("MODEL FOUND")
+        checkpoint = torch.load(checkpoint_name)
+        current_epoch = checkpoint["epoch"]
+        if current_epoch >= num_epochs:
+            return # we are done!
+        state_dict = checkpoint["state_dict"]
+        net.load_state_dict(state_dict)
+    # try to load the model
+    else: 
+        print("NO CHECKPOINT EXISTS")
+        current_epoch = 0
+        
     if use_cuda:
       net = net.cuda()
        
@@ -182,32 +218,8 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
             _, predicted = torch.max(outputs.data, 1)
             total += targets.size(0)
             correct += predicted.eq(targets.data).cpu().sum()
-    
-            #progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
-               # % (test_loss/(batch_idx+1), 100.*(float)(correct)/(float)(total), correct, total))
-       # statstr = 'Testing: Epoch=%d | Loss: %.3f |  Acc: %.3f%% (%d/%d) | best_acc: %.3f' \
-                 # % (epoch, test_loss/(batch_idx+1), 100.*(float)(correct)/(float)(total), correct, total, best_acc)
-        #statfile.write(statstr+'\n')
-        #print(statstr)
         
-        # Save checkpoint.
         acc = 100.*correct/total
-        if epoch % 5 == 0:
-            net.save_model(logdir +"_model_checkpoint_" + str(epoch) + ".t7")
-        #print("Accuracy: ", acc)
-        #state = {
-        #    'state_dict': net.state_dict(),
-        #    'acc': acc,
-        #    'epoch': epoch,           
-        #}
-
-        #torch.save(state, checkpointpath + modelname + '_last_ckpt.t7')
-
-        #check if current accuarcy is the best
-        #if acc >= best_acc:  
-        #    print('Saving..')
-        #    torch.save(state, checkpointpath + modelname + '_best_ckpt.t7')
-        #    best_acc = acc
         return test_loss / (batch_idx + 1), acc
         
     # Set adaptive learning rates
@@ -223,8 +235,7 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
     test_accs = []
       
     #train network
-    for epoch in range(start_epoch, start_epoch+num_epochs):
-        #statfile = open(logpath+'training_stats_'+modelname+'.txt', 'a+')  #open file for writing
+    for epoch in range(current_epoch, current_epoch + 1):
         if epoch==80 or epoch==140 or epoch==200:
             decrease_learning_rate()       
         train_loss, train_acc = train(epoch)
@@ -233,7 +244,7 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
         train_accs.append(train_acc)
         test_losses.append(test_loss)
         test_accs.append(test_acc)
-        save_logs(logdir, savedir, train_losses, train_accs, test_losses, test_accs)
+        save_logs(logdir, savedir, train_losses, train_accs, test_losses, test_accs, net, epoch)
 
 
 def boolcheck(x):
@@ -244,11 +255,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PyTorch CIFAR100 Training')
     parser.add_argument("--logdir", type=str, default="logs")
     parser.add_argument("--savedir",type=str,default="savedir")
-    parser.add_argument('--cls', default=6, type=int, help='number of cycles')
+    parser.add_argument('--cls', default=0, type=int, help='number of cycles')
     parser.add_argument('--model', default='PredNet', help= 'models to train')
     #parser.add_argument('--gpunum', default=2, type=int, help='number of gpu used to train the model')
     parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
-    parser.add_argument("--num_blocks",default=3,type=int, help="depth in blocks of the network")
+    parser.add_argument("--num_blocks",default=1,type=int, help="depth in blocks of the network")
     parser.add_argument("--dataset", default="cifar10", type=str, help="dataset to use")
     parser.add_argument("--use_rate_params", default="False", type=boolcheck, help="Learn a_0, b_0 params via gradient descent?")
     parser.add_argument("--num_epochs", default=50, type=int, help="number of epochs to run for")

@@ -153,8 +153,8 @@ class PredNet(nn.Module):
 
         return out
 
-    def save_model(self,logdir):
-        state = {"state_dict": self.state_dict()}
+    def save_model(self,logdir, epoch):
+        state = {"state_dict": self.state_dict(), "epoch": epoch}
         torch.save(state, logdir)
 
 
@@ -215,3 +215,8 @@ class PredNetTied(nn.Module):
         out = out.view(out.size(0), -1)
         out = self.linear(out)
         return out
+
+    def save_model(self,logdir, epoch):
+        state = {"state_dict": self.state_dict(), "epoch": epoch}
+        torch.save(state, logdir)
+
