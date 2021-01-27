@@ -21,6 +21,7 @@ def save_logs(logdir, savedir, losses, accs, test_losses, test_accs):
     np.save(logdir +"/losses.npy",np.array(losses))
     np.save(logdir+"/accs.npy",np.array(accs))
     np.save(logdir+"/test_accs.npy",np.array(test_accs))
+    np.save(logdir +"/test_losses.npy", np.array(test_losses))
     subprocess.call(['rsync','--archive','--update','--compress','--progress',str(logdir) +"/",str(savedir)])
     print("Rsynced files from: " + str(logdir) + "/ " + " to" + str(savedir))
     now = datetime.now()
