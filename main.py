@@ -229,23 +229,23 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
             param_group['lr'] /= 10
 
     # initialize arrays of loss and accuracies
-    train_losses = []
-    train_accs = []
-    test_losses = []
-    test_accs = []
+    #train_losses = []
+    #train_accs = []
+    #test_losses = []
+    #test_accs = []
       
     #train network
     for epoch in range(current_epoch, current_epoch + num_epochs):
         if epoch==80 or epoch==140 or epoch==200:
             decrease_learning_rate()       
         train_loss, train_acc = train(epoch)
-        test_loss, test_acc = test(epoch)
-        train_losses.append(train_loss)
-        train_accs.append(train_acc)
-        test_losses.append(test_loss)
-        test_accs.append(test_acc)
+        #test_loss, test_acc = test(epoch)
+        #train_losses.append(train_loss)
+        #train_accs.append(train_acc)
+        #test_losses.append(test_loss)
+        #test_accs.append(test_acc)
         print("SAVING LOGS!")
-        save_logs(logdir, savedir, train_losses, train_accs, test_losses, test_accs, net, epoch)
+        save_logs(logdir, savedir, [train_loss], [train_acc], [test_loss], [test_acc], net, epoch)
     print("DONE!!!")
 
 
