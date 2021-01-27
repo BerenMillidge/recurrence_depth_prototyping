@@ -102,7 +102,7 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
     print('==> Building model..')
     net = models[model](num_classes=100,cls=cls,num_blocks = num_blocks,use_rate_params = use_rate_params)
     # see if there is a checkpoint
-    checkpoint_name = logdir + "/model_checkpoint"
+    checkpoint_name = savedir + "/model_checkpoint"
     if os.path.isfile(checkpoint_name):
         print("MODEL FOUND")
         checkpoint = torch.load(checkpoint_name)
@@ -235,7 +235,7 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
     test_accs = []
       
     #train network
-    for epoch in range(current_epoch, current_epoch + 1):
+    for epoch in range(current_epoch, current_epoch + num_epochs):
         if epoch==80 or epoch==140 or epoch==200:
             decrease_learning_rate()       
         train_loss, train_acc = train(epoch)
@@ -244,7 +244,9 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
         train_accs.append(train_acc)
         test_losses.append(test_loss)
         test_accs.append(test_acc)
+        print("SAVING LOGS!")
         save_logs(logdir, savedir, train_losses, train_accs, test_losses, test_accs, net, epoch)
+    print("DONE!!!")
 
 
 def boolcheck(x):
