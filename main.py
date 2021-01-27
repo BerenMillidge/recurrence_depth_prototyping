@@ -239,7 +239,7 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
         if epoch==80 or epoch==140 or epoch==200:
             decrease_learning_rate()       
         train_loss, train_acc = train(epoch)
-        #test_loss, test_acc = test(epoch)
+        test_loss, test_acc = test(epoch)
         #train_losses.append(train_loss)
         #train_accs.append(train_acc)
         #test_losses.append(test_loss)
