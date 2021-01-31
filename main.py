@@ -107,7 +107,9 @@ def train_prednet(logdir,savedir,model='PredNetTied',dataset="cifar10", cls=6, g
         print("MODEL FOUND")
         checkpoint = torch.load(checkpoint_name)
         current_epoch = checkpoint["epoch"]
+        print("CURRENT EPOCH: ", current_epoch)
         if current_epoch >= num_epochs:
+            print("ALL DONE QUITTING EARLY")
             return # we are done!
         state_dict = checkpoint["state_dict"]
         net.load_state_dict(state_dict)
